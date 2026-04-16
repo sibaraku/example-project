@@ -321,11 +321,11 @@ export default function Dashboard() {
     setLoading(true);
 
     try {
-      const params = {
-        start: new Date(start).toISOString(),
-        end: new Date(end).toISOString(),
-        location: locations.join(','),
-      };
+      const params = new URLSearchParams();
+      params.append('start', new Date(start).toISOString());
+      params.append('end', new Date(end).toISOString());
+      locations.forEach((location) => params.append('location', location));
+
       const response = await axios.get('http://localhost:3001/api/readings', { params });
       setReadings(response.data);
     } catch (err) {
