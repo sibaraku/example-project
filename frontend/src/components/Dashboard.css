@@ -197,6 +197,38 @@
   text-align: center;
 }
 
+.heatmap-table-wrapper {
+  overflow-x: auto;
+}
+
+.heatmap-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 240px;
+}
+
+.heatmap-table th,
+.heatmap-table td {
+  padding: 12px 14px;
+  text-align: left;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.heatmap-table th {
+  color: #475569;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.heatmap-value-cell {
+  border-radius: 12px;
+  font-weight: 700;
+}
+
+.heatmap-card .chart-header {
+  margin-bottom: 12px;
+}
+
 .dashboard-summary {
   margin-top: 18px;
   color: #334155;

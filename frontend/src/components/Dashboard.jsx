@@ -29,6 +29,23 @@ const average = (values) => {
   return valid.reduce((sum, value) => sum + value, 0) / valid.length;
 };
 
+const getHeatmapColor = (value, min, max) => {
+  if (!Number.isFinite(value) || max === min) {
+    return 'rgba(226, 232, 240, 0.4)';
+  }
+
+  const normalized = Math.min(1, Math.max(0, (value - min) / (max - min)));
+  const hue = 32 - normalized * 10;
+  const saturation = 85 + normalized * 10;
+  const lightness = 92 - normalized * 30;
+  return `hsl(${hue}, ${saturation}%, ${lightness}%)`;
+};
+
+const getTextColor = (value, min, max) => {
+  const normalized = Number.isFinite(value) && max !== min ? Math.min(1, Math.max(0, (value - min) / (max - min))) : 0;
+  return normalized > 0.55 ? '#111827' : '#0f172a';
+};
+
 const buildLinePath = (points, width, height, margin) => {
   if (!points.length) return '';
   const contentWidth = width - margin * 2;
@@ -169,16 +186,58 @@ const BarChart = ({ bars, title }) => {
       <div className="bar-chart-grid">
         {bars.map((bar) => {
           const heightPercent = Number.isFinite(bar.value) ? Math.round((bar.value / maxValue) * 100) : 0;
+          const trackColor = `${bar.color}22`;
           return (
             <div key={bar.label} className="bar-column">
               <div className="bar-value">{Number.isFinite(bar.value) ? bar.value.toFixed(1) : '—'}</div>
-              <div className="bar-track">
+              <div className="bar-track" style={{ backgroundColor: trackColor, borderColor: bar.color }}>
                 <div className="bar-fill" style={{ height: `${heightPercent}%`, backgroundColor: bar.color }} />
               </div>
               <div className="bar-label">{bar.label}</div>
             </div>
           );
         })}
+      </div>
+    </div>
+  );
+};
+
+const HeatmapTable = ({ title, rows }) => {
+  const values = rows.map((row) => Number.isFinite(row.value) ? row.value : null).filter(Number.isFinite);
+  const minValue = values.length ? Math.min(...values) : 0;
+  const maxValue = values.length ? Math.max(...values) : 0;
+
+  return (
+    <div className="chart-card heatmap-card">
+      <div className="chart-header">{title}</div>
+      <div className="heatmap-table-wrapper">
+        <table className="heatmap-table">
+          <thead>
+            <tr>
+              <th>Label</th>
+              <th>Value</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((row) => {
+              const bgColor = Number.isFinite(row.value)
+                ? getHeatmapColor(row.value, minValue, maxValue)
+                : 'rgba(226, 232, 240, 0.3)';
+              const textColor = Number.isFinite(row.value)
+                ? getTextColor(row.value, minValue, maxValue)
+                : '#475569';
+
+              return (
+                <tr key={row.label}>
+                  <td>{row.label}</td>
+                  <td className="heatmap-value-cell" style={{ backgroundColor: bgColor, color: textColor }}>
+                    {Number.isFinite(row.value) ? row.value.toFixed(1) : '—'}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
       </div>
     </div>
   );
@@ -418,15 +477,14 @@ export default function Dashboard() {
           series={priceOverTimeSeries}
           labels={timeLabels}
         />
-        <BarChart
+        <HeatmapTable
           title="Daily average price in selected date range"
-          bars={dailyAverage.map((item) => ({
-            label: item.date,
-            value: item.value,
-            color: '#2563eb',
-          }))}
+          rows={dailyAverage.map((item) => ({ label: item.date, value: item.value }))}
         />
-        <BarChart title="Average price per selected location" bars={averageByLocation} />
+        <HeatmapTable
+          title="Average price per selected location"
+          rows={averageByLocation.map((item) => ({ label: item.label, value: item.value }))}
+        />
         <LineChart title="Compare prices per location on selected period" series={compareSeries} labels={dates} />
       </div>
 
