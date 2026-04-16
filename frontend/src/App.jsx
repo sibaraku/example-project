@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
-import PriceSync from './/components/PriceSync';
+import PriceSync from './components/PriceSync';
+import Dashboard from './components/Dashboard';
 import './App.css';
 
 function App() {
@@ -22,9 +23,14 @@ function App() {
     <div className="app-container">
       <h1 className="app-status">{status}</h1>
 
-      <div className="price-sync-container">
-        {status === 'Backend OK' && <PriceSync />}
-      </div>
+      {status === 'Backend OK' ? (
+        <div className="app-body">
+          <Dashboard />
+          <div className="price-sync-panel">
+            <PriceSync />
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

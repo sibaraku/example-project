@@ -12,6 +12,19 @@
   color: #333;
 }
 
-.price-sync-container {
-  margin-top: 20px;
+.app-body {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 30px;
+  align-items: start;
+}
+
+.price-sync-panel {
+  max-width: 460px;
+}
+
+@media (max-width: 1120px) {
+  .app-body {
+    grid-template-columns: 1fr;
+  }
 }
