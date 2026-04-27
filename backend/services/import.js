@@ -3,6 +3,7 @@ const path = require('path')
 
 const db = require('../models')
 const { EnergyReading } = db
+const { isValidISO8601UTC } = require('../utils/validation')
 
 exports.importJSON = async () => {
 
@@ -24,6 +25,12 @@ exports.importJSON = async () => {
     try {
 
       let timestamp = new Date(record.timestamp)
+
+      // Validate ISO 8601 UTC format with timezone
+      if (!isValidISO8601UTC(record.timestamp)) {
+        skipped++
+        continue
+      }
 
       if (isNaN(timestamp)) {
         skipped++

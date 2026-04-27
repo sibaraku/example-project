@@ -17,6 +17,19 @@ app.use('/api', importRoutes)
 app.use('/api', readingRoutes)
 app.use('/api', syncRoutes)
 
+// Global error handler middleware
+app.use((error, req, res, next) => {
+  console.error('Error:', error)
+  
+  // Don't expose stack trace to client
+  const statusCode = error.statusCode || 500
+  const message = error.message || 'An error occurred. Please try again.'
+  
+  res.status(statusCode).json({
+    error: message
+  })
+})
+
 const PORT = process.env.PORT || 3001
 
 db.sequelize.sync().then(() => {
@@ -27,3 +40,5 @@ db.sequelize.sync().then(() => {
   console.error('Failed to sync database:', err)
   process.exit(1)
 })
+
+module.exports = app

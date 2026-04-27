@@ -1,37 +1,44 @@
 const db = require('../models')
 const { EnergyReading } = db
 const { Op } = db.Sequelize
+const { validateReadingParams } = require('../utils/validation')
 
-exports.getReadings = async (req, res) => {
+exports.getReadings = async (req, res, next) => {
+  try {
+    const { start, end } = req.query
+    const rawLocation = req.query.location || req.query['location[]']
 
-  const { start, end } = req.query
-  const rawLocation = req.query.location || req.query['location[]']
+    // Validate parameters
+    const validation = validateReadingParams({ start, end, location: rawLocation })
+    if (!validation.isValid) {
+      return res.status(400).json({ 
+        error: 'Validation failed',
+        details: validation.errors 
+      })
+    }
 
-  if (!start || !end || !rawLocation)
-    return res.status(400).json({ error: 'Missing params' })
+    const locations = Array.isArray(rawLocation)
+      ? rawLocation
+      : String(rawLocation).split(',').map((item) => item.trim()).filter(Boolean)
 
-  const locations = Array.isArray(rawLocation)
-    ? rawLocation
-    : String(rawLocation).split(',').map((item) => item.trim()).filter(Boolean)
+    const startDate = new Date(start)
+    const endDate = new Date(end)
 
-  if (!locations.length)
-    return res.status(400).json({ error: 'Missing params' })
+    const readings = await EnergyReading.findAll({
+      where: {
+        timestamp: { [Op.between]: [startDate, endDate] },
+        location: { [Op.in]: locations }
+      },
+      order: [['timestamp', 'ASC']]
+    })
 
-  const startDate = new Date(start)
-  const endDate = new Date(end)
-
-  const readings = await EnergyReading.findAll({
-    where: {
-      timestamp: { [Op.between]: [startDate, endDate] },
-      location: { [Op.in]: locations }
-    },
-    order: [['timestamp', 'ASC']]
-  })
-
-  res.json(readings)
+    res.json(readings)
+  } catch (error) {
+    next(error)
+  }
 }
 
-exports.getSummary = async (req, res) => {
+exports.getSummary = async (req, res, next) => {
   try {
     const locationsResult = await EnergyReading.findAll({
       attributes: ['location'],
@@ -56,6 +63,38 @@ exports.getSummary = async (req, res) => {
       locations,
     })
   } catch (error) {
-    res.status(500).json({ error: 'Failed to load summary' })
+    next(error)
+  }
+}
+
+/**
+ * Delete records with source = "UPLOAD"
+ * Endpoint: DELETE /api/readings?source=UPLOAD
+ */
+exports.deleteUploadedReadings = async (req, res, next) => {
+  try {
+    const { source } = req.query
+
+    // Only allow deletion of UPLOAD source records
+    if (source !== 'UPLOAD') {
+      return res.status(400).json({ 
+        error: 'Invalid request. Only UPLOAD records can be deleted.' 
+      })
+    }
+
+    const deletedCount = await EnergyReading.destroy({
+      where: { source: 'UPLOAD' }
+    })
+
+    if (deletedCount === 0) {
+      return res.json({ message: 'No UPLOAD records found.' })
+    }
+
+    res.json({ message: `Deleted ${deletedCount} uploaded records.` })
+  } catch (error) {
+    res.status(500).json({ 
+      error: 'Cleanup failed. Please try again.' 
+    })
+    next(error)
   }
 }
